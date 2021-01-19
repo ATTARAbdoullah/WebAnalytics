@@ -1,0 +1,400 @@
+{% extends 'webanalytique/base.html' %}
+{% load customtags %}
+{% block styles %}
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.22/css/dataTables.bootstrap4.min.css">
+    <style>
+
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12 text-center" id="viz_container">
+                            <button id="gen_viz" class="btn btn-outline-info btn-lg rounded-0 my-4">Generate
+                                Vizualisation
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12 col-md-6 d-flex justify-content-between mx-auto mb-4">
+                            <button class="btn btn-outline-info rounded-0" id="btn-prec">prec</button>
+                            <select class="form-control rounded-0" id="select-graph">
+                                <option value="-1">All Network</option>
+                            </select>
+                            <button class="btn btn-outline-info rounded-0" id="btn-suiv">suiv</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <ul class="list-group">
+                    <li class="list-group-item">Number of nodes : {{ nodes_number }}</li>
+                    <li class="list-group-item">Number of edges : {{ links_number }}</li>
+                    <li class="list-group-item">Density : {{ density }}</li>
+                    <li class="list-group-item">Degree centrality of the network : {{ DCN }}</li>
+                    <li class="list-group-item">Most popular node : [id: {{ MPN | get_item:0 }},
+                        degree: {{ MPN | get_item:1 }}]
+                    </li>
+                    <li class="list-group-item">Community detection performance : {{ comp_perf }}</li>
+                </ul>
+                <div class="accordion" id="accordionExample">
+                    <div class="card">
+                        <div class="card-header" id="headingOne">
+                            <h2 class="mb-0 dropdown">
+                                <button class="btn btn-outline-info btn-block rounded-0 text-left" type="button"
+                                        data-toggle="collapse"
+                                        data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                    Nodes Informations
+                                </button>
+                            </h2>
+                        </div>
+                        <div id="collapseOne" class="collapse show" aria-labelledby="headingOne"
+                             data-parent="#accordionExample">
+                            <div class="card-body">
+                                <table class="table table-hover table-sm table-ginfo">
+                                    <thead>
+                                    <tr>
+                                        <td>Id</td>
+                                        <td>Label</td>
+                                        <td>Degree</td>
+                                        <td>Degree Centrality</td>
+                                        <td>Betweeness Centrality</td>
+                                        <td>Closeness Centrality</td>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for data in dataTable %}
+                                        <tr>
+                                            <td> {{ data.id }} </td>
+                                            <td> {{ data.label }} </td>
+                                            <td> {{ data.degree }} </td>
+                                            <td> {{ data.DC }} </td>
+                                            <td> {{ data.BC }} </td>
+                                            <td> {{ data.CC }} </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header" id="headingTwo">
+                            <h2 class="mb-0 dropdown">
+                                <button class="btn btn-outline-info btn-block rounded-0 text-left" type="button"
+                                        data-toggle="collapse"
+                                        data-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
+                                    Edges Informations
+                                </button>
+                            </h2>
+                        </div>
+                        <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo"
+                             data-parent="#accordionExample">
+                            <div class="card-body">
+                                <table class="table table-hover table-sm table-einfo">
+                                    <thead>
+                                    <tr>
+                                        <td>Source</td>
+                                        <td>Target</td>
+                                        <td>Value</td>
+                                        <td>Edge Betweeness</td>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for data in dataTable_e %}
+                                        <tr>
+                                            <td> {{ data.source }} </td>
+                                            <td> {{ data.target }} </td>
+                                            <td> {{ data.value }} </td>
+                                            <td> {{ data.edge_btwness }} </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header" id="headingFour">
+                            <h2 class="mb-0">
+                                <button class="btn btn-outline-info btn-block rounded-0 text-left collapsed"
+                                        type="button"
+                                        data-toggle="collapse" data-target="#collapseFour" aria-expanded="false"
+                                        aria-controls="collapseFour">
+                                    Communities
+                                </button>
+                            </h2>
+                        </div>
+                        <div id="collapseFour" class="collapse show" aria-labelledby="headingFour"
+                             data-parent="#accordionExample">
+                            <div class="card-body">
+                                <table class="table table-hover table-sm table-5">
+                                    <thead>
+                                    <tr>
+                                        <td>Id</td>
+                                        <td>Nodes</td>
+                                        <td>Edges</td>
+                                        <td>Intra density</td>
+                                        <td>Inter density</td>
+                                        <td>ASPL</td>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for com in communities %}
+                                        <tr>
+                                            <td> {{ com.id }} </td>
+                                            <td> {{ com.nb_nodes }} </td>
+                                            <td> {{ com.nb_edges }} </td>
+                                            <td> {{ com.intra_density }} </td>
+                                            <td> {{ com.inter_density }} </td>
+                                            <td> {{ com.average_shortest_path }} </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block javascripts %}
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/plug-ins/1.10.21/sorting/formatted-numbers.js"></script>
+    <script>
+        var graphs = JSON.parse('{{communities_json | escapejs}}');
+        var network = JSON.parse('{{G | escapejs}}');
+        var num = 0;
+
+        function forceSimulation(width, height) {
+            return d3.forceSimulation()
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("charge", d3.forceManyBody())
+                .force("link", d3.forceLink().id(d => d.id));
+        }
+
+        function findNode(nodes, x, y, radius) {
+            const rSq = radius * radius;
+            let i;
+            for (i = nodes.length - 1; i >= 0; --i) {
+                const node = nodes[i],
+                    dx = x - node.x,
+                    dy = y - node.y,
+                    distSq = (dx * dx) + (dy * dy);
+                if (distSq < rSq) {
+                    return node;
+                }
+            }
+            // No node selected
+            return undefined;
+        }
+
+        forceGraph = (data) => {
+            let canvas = document.createElement('canvas');
+            canvas.width = 550;
+            canvas.height = 550;
+            $(canvas).addClass("shadow-lg mb-4");
+            const ctx = canvas.getContext('2d');
+
+            const width = canvas.width;
+            const height = canvas.height;
+
+            const w2 = width / 2,
+                h2 = height / 2,
+                nodeRadius = 4;
+
+            const simulation = forceSimulation(width, height);
+            let transform = d3.zoomIdentity;
+
+            // The simulation will alter the input data objects so make
+            // copies to protect the originals.
+            const nodes = data.nodes.map(d => Object.assign({}, d));
+            const edges = data.links.map(d => Object.assign({}, d));
+
+            d3.select(canvas)
+                .call(d3.drag()
+                    // Must set this in order to drag nodes. New in v5?
+                    .container(canvas)
+                    .subject(dragSubject)
+                    .on('start', dragStarted)
+                    .on('drag', dragged)
+                    .on('end', dragEnded))
+                .call(d3.zoom()
+                    .scaleExtent([1 / 10, 8])
+                    .on('zoom', zoomed));
+
+            simulation.nodes(nodes)
+                .on("tick", simulationUpdate);
+            simulation.force("link")
+                .links(edges);
+
+            function zoomed() {
+                transform = d3.event.transform;
+                simulationUpdate();
+            }
+
+            /** Find the node that was clicked, if any, and return it. */
+            function dragSubject() {
+                const x = transform.invertX(d3.event.x),
+                    y = transform.invertY(d3.event.y);
+                const node = findNode(nodes, x, y, nodeRadius);
+                if (node) {
+                    node.x = transform.applyX(node.x);
+                    node.y = transform.applyY(node.y);
+                }
+                // else: No node selected, drag container
+                return node;
+            }
+
+            function dragStarted() {
+                if (!d3.event.active) {
+                    simulation.alphaTarget(0.3).restart();
+                }
+                d3.event.subject.fx = transform.invertX(d3.event.x);
+                d3.event.subject.fy = transform.invertY(d3.event.y);
+            }
+
+            function dragged() {
+                d3.event.subject.fx = transform.invertX(d3.event.x);
+                d3.event.subject.fy = transform.invertY(d3.event.y);
+            }
+
+            function dragEnded() {
+                if (!d3.event.active) {
+                    simulation.alphaTarget(0);
+                }
+                d3.event.subject.fx = null;
+                d3.event.subject.fy = null;
+            }
+
+            function simulationUpdate() {
+                ctx.save();
+                ctx.clearRect(0, 0, width, height);
+                ctx.translate(transform.x, transform.y);
+                ctx.scale(transform.k, transform.k);
+                // Draw edges
+                edges.forEach(function (d) {
+                    ctx.beginPath();
+                    ctx.moveTo(d.source.x, d.source.y);
+                    ctx.lineTo(d.target.x, d.target.y);
+                    ctx.lineWidth = Math.sqrt(d.value);
+                    ctx.strokeStyle = '#aaa';
+                    ctx.stroke();
+                });
+                // Draw nodes
+                nodes.forEach(function (d, i) {
+                    ctx.beginPath();
+                    // Node fill
+                    ctx.moveTo(d.x + nodeRadius, d.y);
+                    ctx.arc(d.x, d.y, nodeRadius, 0, 2 * Math.PI);
+                    ctx.fillStyle = d3.color("steelblue");
+                    ctx.fill();
+                    // Node outline
+                    ctx.strokeStyle = '#fff'
+                    ctx.lineWidth = '1'
+                    ctx.stroke();
+                    ctx.fillStyle = d3.color("white");
+                    ctx.font = "2px Arial";
+                    switch (Math.floor(Math.log10(d.id))) {
+                        case 0:
+                            ctx.fillText(d.id, d.x - 0.6, d.y + 0.75);
+                            break
+                        case 1:
+                            ctx.fillText(d.id, d.x - 1.25, d.y + 0.75);
+                            break
+                        case 2:
+                            ctx.fillText(d.id, d.x - 1.75, d.y + 0.75);
+                            break
+                        case 3:
+                            ctx.fillText(d.id, d.x - 2.25, d.y + 0.75);
+                            break
+                        default:
+                            ctx.fillText(d.id, d.x - 0.6, d.y + 0.75);
+                    }
+                    ctx.fillStyle = d3.color("black");
+                    ctx.font = "3px Arial";
+                    ctx.fillText(d.label, d.x - d.label.length + 1, d.y - 5);
+                });
+                ctx.restore();
+            }
+
+            return canvas;
+        }
+
+        $(document).ready(function () {
+            $('.table-ginfo').dataTable({
+                "columns": [
+                    {"type": "num"},
+                    {"type": "string"},
+                    {"type": "num"},
+                    {"type": "string"},
+                    {"type": "string"},
+                    {"type": "string"},
+                ]
+            });
+            $('.table-einfo').dataTable({
+                "columns": [
+                    {"type": "num"},
+                    {"type": "num"},
+                    {"type": "string"},
+                    {"type": "string"},
+                ]
+            });
+            $('.table-5').dataTable({
+                "columns": [
+                    {"type": "num"},
+                    {"type": "num"},
+                    {"type": "num"},
+                    {"type": "string"},
+                    {"type": "string"},
+                    {"type": "string"},
+                ]
+            });
+            $('.collapse').removeClass('show');
+            $('#gen_viz').click(() => {
+                $("#viz_container").html(forceGraph(graphs[num].graph));
+            })
+            $(graphs).each((k, g) => {
+                $("#select-graph").append('<option value="' + g.id + '">' + g.id + '</option>');
+                $("#select-graph").val(0);
+            });
+            $("#select-graph").change(() => {
+                num = $("#select-graph").val();
+                if (num == -1) {
+                    $("#viz_container").html(forceGraph(network));
+                } else {
+                    $("#viz_container").html(forceGraph(graphs[num].graph));
+                }
+            });
+            $("#btn-prec").click(() => {
+                if (num >= 0) {
+                    num--;
+                    $("#select-graph").val(num);
+                    if (num == -1) {
+                        $("#viz_container").html(forceGraph(network));
+                    } else {
+                        $("#viz_container").html(forceGraph(graphs[num].graph));
+                    }
+                }
+            });
+            $("#btn-suiv").click(() => {
+                if (num < graphs.length - 1) {
+                    num++;
+                    $("#select-graph").val(num);
+                    $("#viz_container").html(forceGraph(graphs[num].graph));
+                }
+            });
+        });
+
+    </script>
+{% endblock %}
